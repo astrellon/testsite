@@ -1,0 +1,14 @@
+doctype html
+
+html
+  head
+    title= title
+    link(rel='stylesheet', href='/stylesheets/style.css')
+    link(rel='stylesheet', href='/stylesheets/test.css')
+    script(type='text/javascript', src='/socket.io/socket.io.js')
+    script(type='text/javascript', src='javascripts/client.js')
+  body!= body
+    #header
+        block header
+    #content
+        block content
