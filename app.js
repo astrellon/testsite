@@ -1,4 +1,3 @@
-
 /**
  * Module dependencies.
  */
@@ -9,6 +8,7 @@ var express = require('express')
   , morgan = require('morgan')
   , errorHandler = require('errorhandler')
   , http = require('http')
+  , mongoItems = require('./routes/items')
   , sass = require('node-sass');
 
 var app = express();
@@ -36,5 +36,10 @@ if (env === 'development') {
 
 app.get('/', routes.index);
 
+app.get('/items', mongoItems.findAll);
+app.get('/items/:id', mongoItems.findById);
+app.post('/items', mongoItems.addItem);
+app.put('/items/:id', mongoItems.updateItem);
+app.delete('/items/:id', mongoItems.deleteItem);
 
 console.log("Express server listening on port 3000");
