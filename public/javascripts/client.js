@@ -13,16 +13,46 @@ socket.on('items', function (data) {
         processItem(data);
     }
 });
+socket.on('error', function(data) {
+    console.error("Socket error: ", data);
+});
+socket.on('updateItems', function(data) {
+    console.log("Update items: ", data);
+    //$("ul.items [data-id='" + data"'")
+});
+socket.on('removeItems', function(data) {
+    console.log("Remove items: ", data);
+    $("ul.items [data-id='" + data + "'").slideUp(400).fadeOut(400, function() {
+        $(this).remove();
+    });
+});
 
 function processItem(item) {
-    $("<li>" + JSON.stringify(item) + "</li>").appendTo("ul.items").hide().fadeIn();
+    var el = $("<li data-id='" + item._id + "'>" + JSON.stringify(item) + "</li>");
+    el.append("<input type='button' class='remove' value='Remove'/>");
+    el.appendTo("ul.items").hide().fadeIn();
 }
 
 function createItem() {
     socket.emit('addItem', {'notcrazy': 'notdata'});
+}
+function removeItem(id) {
+    socket.emit('removeItem', id);
+}
+function updateItem(id) {
+    socket.emit('updateItem', {id: id, data: {more: 'asd'}});
 }
 function removeAll() {
     $.get("/drop", function(resp) {
         console.log("Dropped:" , resp);
     });
 }
+
+$(function() {
+    $('ul.items').on('click', '.remove', function() {
+        var id = $(this).parent().attr("data-id");
+        if (id) {
+            removeItem(id);
+        }
+    });
+ });

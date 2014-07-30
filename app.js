@@ -15,16 +15,19 @@ var app = express();
 var server = app.listen(3000);
 var io = require('socket.io').listen(server); // this tells socket.io to use our express server
 
+mongoItems.setIo(io);
 
 io.on('connection', function(socket) {
-    mongoItems.socketConnect(io, socket);
+    mongoItems.socketConnect(socket);
     function bindSocket(callback) {
         return function(data) {
-            callback(io, socket, data);
+            callback(socket, data);
         }
     }
 
     socket.on('addItem', bindSocket(mongoItems.socketAdd));
+    socket.on('removeItem', bindSocket(mongoItems.socketDelete));
+    socket.on('updateItem', bindSocket(mongoItems.socketUpdate));
 });
 
 var env = process.env.NODE_ENV || 'development';
