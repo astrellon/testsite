@@ -5,3 +5,8 @@ block header
 
 block content
     p Welcome to #{title}
+    input(type='button', onclick='createItem()', value='Create')
+    input(type='button', onclick='removeAll()', value='Remove all')
+
+block items
+    ul.items
