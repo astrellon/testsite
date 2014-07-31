@@ -68,25 +68,49 @@ function deleteItem(id, callback) {
         }
         var objId = {'_id': new BSON.ObjectID(id)};
         collection.remove(objId, {safe: true}, function(err, result) {
-            if (typeof(callback) === "function") {
-                callback(err, result);
-            }
             if (io) {
                 io.emit('removeItems', [id]);
+            }
+            if (typeof(callback) === "function") {
+                callback(err, result);
             }
         });
     });
 }
+function mergeObjects(dest, obj1, obj2) {
+    for (var prop in obj1) {
+        dest[prop] = obj1[prop];
+    }
+    for (var prop in obj2) {
+        dest[prop] = obj2[prop];
+    }
+}
 function updateItem(id, item, callback) {
     db.collection(collectionName, function(err, collection) {
-        var objId = {'_id': new BSON.ObjectID(id)};
-        collection.update(objId, item, {safe: true}, function(err, result) {
+        if (err) {
             if (typeof(callback) === "function") {
-                callback(err, result);
+                callback(err, null);
             }
-            if (io) {
-                io.emit('updateItems', [{id: id, item: item}]);
+            return;
+        }
+        var objId = {'_id': new BSON.ObjectID(id)};
+        collection.findOne({'_id': new BSON.ObjectID(id)}, function(err, origItem) {
+            if (err) {
+                if (typeof(callback) === "function") {
+                    callback(err, null);
+                }
+                return;
             }
+            var merged = {};
+            mergeObjects(merged, origItem, item);
+            collection.update(objId, merged, {safe: true}, function(err, result) {
+                if (typeof(callback) === "function") {
+                    callback(err, result);
+                }
+                if (!err && io) {
+                    io.emit('updateItems', [merged]);
+                }
+            });
         });
     });
 }

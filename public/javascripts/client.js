@@ -18,7 +18,14 @@ socket.on('error', function(data) {
 });
 socket.on('updateItems', function(data) {
     console.log("Update items: ", data);
-    //$("ul.items [data-id='" + data"'")
+    if (!$.isArray(data)) {
+        data = [data];
+    }
+    for (var i = 0; i < data.length; i++) {
+        var item = data[i];
+        var id = item._id;
+        $("ul.items [data-id='" + id + "']>.item").html(JSON.stringify(item));
+    }
 });
 socket.on('removeItems', function(data) {
     console.log("Remove items: ", data);
@@ -28,8 +35,9 @@ socket.on('removeItems', function(data) {
 });
 
 function processItem(item) {
-    var el = $("<li data-id='" + item._id + "'>" + JSON.stringify(item) + "</li>");
+    var el = $("<li data-id='" + item._id + "'><span class='item'>" + JSON.stringify(item) + "</span></li>");
     el.append("<input type='button' class='remove' value='Remove'/>");
+    el.append("<input type='button' class='update' value='Update'/>");
     el.appendTo("ul.items").hide().fadeIn();
 }
 
@@ -40,12 +48,14 @@ function removeItem(id) {
     socket.emit('removeItem', id);
 }
 function updateItem(id) {
-    socket.emit('updateItem', {id: id, data: {more: 'asd'}});
+    socket.emit('updateItem', {id: id, item: {more: 'asd'}});
 }
 function removeAll() {
     $.get("/drop", function(resp) {
         console.log("Dropped:" , resp);
     });
+}
+function submitText() {
 }
 
 $(function() {
@@ -53,6 +63,12 @@ $(function() {
         var id = $(this).parent().attr("data-id");
         if (id) {
             removeItem(id);
+        }
+    })
+    .on('click', '.update', function() {
+        var id = $(this).parent().attr("data-id");
+        if (id) {
+            updateItem(id);
         }
     });
  });
