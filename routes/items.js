@@ -114,6 +114,16 @@ function updateItem(id, item, callback) {
         });
     });
 }
+function deleteAll(callback) {
+    db.dropCollection(collectionName, function(err, result) {
+        if (typeof(callback) === "function") {
+            callback(err, result);
+        }
+        if (!err) {
+            io.emit('removeAll');
+        }
+    });
+}
 exports.addItem = function(req, res) {
     var item = req.body;
     addItem(item, function(err, result) {
@@ -153,7 +163,7 @@ exports.deleteItem = function(req, res) {
     });
 }
 exports.deleteAll = function(req, res) {
-    db.dropCollection(collectionName, function(err, result) {
+    deleteAll(function(err, result) {
         if (err) {
             res.send("Error dropping table: " + err);
         }

@@ -33,6 +33,11 @@ socket.on('removeItems', function(data) {
         $(this).remove();
     });
 });
+socket.on('removeAll', function() {
+    $('ul.items [data-id]').slideUp(400).fadeOut(400, function() {
+        $(this).remove();
+    });
+})
 
 function processItem(item) {
     var el = $("<li data-id='" + item._id + "'><span class='item'>" + JSON.stringify(item) + "</span></li>");
