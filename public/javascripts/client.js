@@ -24,7 +24,7 @@ socket.on('updateItems', function(data) {
     for (var i = 0; i < data.length; i++) {
         var item = data[i];
         var id = item._id;
-        $("ul.items [data-id='" + id + "']>.item").html(JSON.stringify(item));
+        $("ul.items [data-id='" + id + "']>.item").html(item.text);
     }
 });
 socket.on('removeItems', function(data) {
@@ -40,27 +40,25 @@ socket.on('removeAll', function() {
 })
 
 function processItem(item) {
-    var el = $("<li data-id='" + item._id + "'><span class='item'>" + JSON.stringify(item) + "</span></li>");
+    var el = $("<li data-id='" + item._id + "'><span class='item'>" + item.text + "</span></li>");
     el.append("<input type='button' class='remove' value='Remove'/>");
     el.append("<input type='button' class='update' value='Update'/>");
     el.appendTo("ul.items").hide().fadeIn();
 }
 
-function createItem() {
-    socket.emit('addItem', {'notcrazy': 'notdata'});
+function createItem(text) {
+    socket.emit('addItem', {text: text});
 }
 function removeItem(id) {
     socket.emit('removeItem', id);
 }
-function updateItem(id) {
-    socket.emit('updateItem', {id: id, item: {more: 'asd'}});
+function updateItem(id, text) {
+    socket.emit('updateItem', {id: id, item: {text: text}});
 }
 function removeAll() {
     $.get("/drop", function(resp) {
         console.log("Dropped:" , resp);
     });
-}
-function submitText() {
 }
 
 $(function() {
@@ -73,7 +71,14 @@ $(function() {
     .on('click', '.update', function() {
         var id = $(this).parent().attr("data-id");
         if (id) {
-            updateItem(id);
+            updateItem(id, 'whuut');
         }
+    });
+
+    $('.itemSubmission .submit').click(function() {
+        var field = $(this).closest('.itemSubmission').find('.submitText');
+        var submitText = field.val();
+        field.val('');
+        createItem(submitText);
     });
  });

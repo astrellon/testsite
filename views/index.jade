@@ -5,13 +5,14 @@ block header
 
 block content
     p Welcome to #{title}
-    input(type='button', onclick='createItem()', value='Create')
     input(type='button', onclick='removeAll()', value='Remove all')
 
 block items
     ul.items
 
 block itemSubmission
-    div Enter some text:
-    input(type='textarea', placeholder='Enter some text yo')
-    input(type='button', onclick='submitText()', value='Submit')
+    div.itemSubmission
+        div Enter some text:
+        textarea.submitText(placeholder='Dat some text yo', rows='1', cols='1', name='text')
+        div
+            input.submit(type='button', value='Submit')
