@@ -37,12 +37,14 @@ socket.on('removeAll', function() {
     $('ul.items [data-id]').slideUp(400).fadeOut(400, function() {
         $(this).remove();
     });
-})
+});
 
+var buttonTemplate = doT.template('<input type="button" class="{{=it.klass}}" value="{{=it.value}}"/>');
+var itemTemplate = doT.template('<li data-id="{{=it.id}}"><span class="item">{{=it.text}}</span></li>');
 function processItem(item) {
-    var el = $("<li data-id='" + item._id + "'><span class='item'>" + item.text + "</span></li>");
-    el.append("<input type='button' class='remove' value='Remove'/>");
-    el.append("<input type='button' class='update' value='Update'/>");
+    var el = $(itemTemplate({id: item._id, text: item.text}));
+    el.append(buttonTemplate({klass: 'remove', value: 'Remove'}));
+    el.append(buttonTemplate({klass: 'update', value: 'Update'}));
     el.appendTo("ul.items").hide().fadeIn();
 }
 
@@ -55,6 +57,16 @@ function removeItem(id) {
 function updateItem(id, text) {
     socket.emit('updateItem', {id: id, item: {text: text}});
 }
+function showUpdate(id) {
+    $('.itemSubmission .submitText').attr('updating', id).val()
+    $('.itemSubmission .submit').slideUp();
+    $('.itemSubmission .update').slideDown();
+}
+function closeUpdate() {
+    $('.itemSubmission .submitText').removeAttr('updating');
+    $('.itemSubmission .submit').slideDown();
+    $('.itemSubmission .update').slideUp();
+}
 function removeAll() {
     $.get("/drop", function(resp) {
         console.log("Dropped:" , resp);
@@ -62,6 +74,8 @@ function removeAll() {
 }
 
 $(function() {
+    var tempFn = doT.template("<div>Yo {{=it.name}}</div>");
+    $("#header").append(tempFn({name: 'Melli'}));
     $('ul.items').on('click', '.remove', function() {
         var id = $(this).parent().attr("data-id");
         if (id) {
@@ -71,7 +85,7 @@ $(function() {
     .on('click', '.update', function() {
         var id = $(this).parent().attr("data-id");
         if (id) {
-            updateItem(id, 'whuut');
+            showUpdate(id);
         }
     });
 
@@ -81,4 +95,19 @@ $(function() {
         field.val('');
         createItem(submitText);
     });
+
+    $('.itemSubmission').on('click', 'input.update', function() {
+        var area = $('.itemSubmission .submitText');
+        var id = area.attr('updating');
+        if (!id) {
+            closeUpdate();
+            return;
+        }
+        updateItem(id, area.val());
+        closeUpdate();
+    })
+    .on('click', 'input.cancel', function() {
+        closeUpdate();
+    });
+
  });
