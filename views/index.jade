@@ -9,6 +9,11 @@ block content
 
 block items
     ul.items
+        each item, index in items
+            li 
+                span #{item}
+                input.update(type='button', value='Update')
+                input.remove(type='button', value='Remove')
 
 block itemSubmission
     div.itemSubmission
