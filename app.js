@@ -10,29 +10,10 @@ var express = require('express')
   , errorHandler = require('errorhandler')
   , http = require('http')
   , mongoItems = require('./routes/items')
-  , jade_browser = require('jade-browser')
   , sass = require('node-sass');
 
 var app = express();
 var server = app.listen(3000);
-var io = require('socket.io').listen(server); // this tells socket.io to use our express server
-
-mongoItems.setIo(io);
-
-io.set('browser client minifcation', true);
-io.set('browser client etag', true);
-io.on('connection', function(socket) {
-    mongoItems.socketConnect(socket);
-    function bindSocket(callback) {
-        return function(data) {
-            callback(socket, data);
-        }
-    }
-
-    socket.on('addItem', bindSocket(mongoItems.socketAdd));
-    socket.on('removeItem', bindSocket(mongoItems.socketDelete));
-    socket.on('updateItem', bindSocket(mongoItems.socketUpdate));
-});
 
 var env = process.env.NODE_ENV || 'development';
 if (env === 'development') {
@@ -58,11 +39,11 @@ if (env === 'development') {
 
 app.get('/', routes.index);
 
-app.get('/items', mongoItems.findAll);
-app.get('/items/:id', mongoItems.findById);
-app.post('/items', mongoItems.addItem);
-app.put('/items/:id', mongoItems.updateItem);
-app.delete('/items/:id', mongoItems.deleteItem);
-app.get('/drop', mongoItems.deleteAll);
+app.get('/items', mongoItems.urlFindAll);
+app.get('/items/:id', mongoItems.urlFindById);
+app.post('/items', mongoItems.urlAddItem);
+app.put('/items/:id', mongoItems.urlUpdateItem);
+app.delete('/items/:id', mongoItems.urlDeleteItem);
+app.get('/drop', mongoItems.urlDeleteAll);
 
 console.log("Express server listening on port 3000");

@@ -4,11 +4,6 @@ var BSON = mongo.BSONPure;
 var server = new mongo.Server('localhost', 27017, {auto_reconnect: true});
 var db = new mongo.Db('testdb', server);
 var collectionName = 'testcollection';
-var io = null;
-
-exports.setIo = function(i) {
-    io = i;
-}
 
 db.open(function(err, db) {
     if (!err) {
@@ -20,28 +15,40 @@ db.open(function(err, db) {
     }
 })
 
-exports.findById = function(req, res) {
-    var id = req.params.id;
+function findById(id, callback) {
+    if (typeof(callback) !== "function") {
+        console.log("Cannot find by id '" + id + "' without a callback");
+        return;
+    }
     db.collection(collectionName, function(err, collection) {
         collection.findOne({'_id': new BSON.ObjectID(id)}, function(err, item) {
-            res.send(item);
+            callback(err, item);
         });
     });
 }
+exports.urlFindById = function(req, res) {
+    var id = req.params.id;
+    findById(id, function(err, item) {
+        res.send(item);
+    });
+}
 function findAll(callback) {
+    if (typeof(callback) !== "function") {
+        console.log("Cannot find all without a callback");
+        return;
+    }
     db.collection(collectionName, function(err, collection) {
-        if (err && typeof(callback) === "function") {
+        if (err) {
             callback(err, null);
             return;
         }
         collection.find().toArray(function(err, items) {
-            if (typeof(callback) === "function") {
-                callback(err, items);
-            }
+            callback(err, items);
         });
     });
 }
-exports.findAll = function(req, res) {
+exports.findAll = findAll;
+exports.urlFindAll = function(req, res) {
     findAll(function(err, items) {
         res.send(items);
     });
@@ -54,9 +61,6 @@ function addItem(item, callback) {
             if (typeof(callback) === "function") {
                 callback(err, result);
             }
-            if (io) {
-                io.emit('items', result[0]);
-            }
         });
     })
 }
@@ -68,9 +72,6 @@ function deleteItem(id, callback) {
         }
         var objId = {'_id': new BSON.ObjectID(id)};
         collection.remove(objId, {safe: true}, function(err, result) {
-            if (io) {
-                io.emit('removeItems', [id]);
-            }
             if (typeof(callback) === "function") {
                 callback(err, result);
             }
@@ -107,9 +108,6 @@ function updateItem(id, item, callback) {
                 if (typeof(callback) === "function") {
                     callback(err, result);
                 }
-                if (!err && io) {
-                    io.emit('updateItems', [merged]);
-                }
             });
         });
     });
@@ -119,12 +117,10 @@ function deleteAll(callback) {
         if (typeof(callback) === "function") {
             callback(err, result);
         }
-        if (!err) {
-            io.emit('removeAll');
-        }
     });
 }
-exports.addItem = function(req, res) {
+exports.addItem = addItem;
+exports.urlAddItem = function(req, res) {
     var item = req.body;
     addItem(item, function(err, result) {
         if (err) {
@@ -135,7 +131,8 @@ exports.addItem = function(req, res) {
         }
     });
 }
-exports.updateItem = function(req, res) {
+exports.updateItem = updateItem;
+exports.urlUpdateItem = function(req, res) {
     var id = req.params.id;
     var item = req.body;
     updateItem(id, item, function(err, result) {
@@ -150,7 +147,8 @@ exports.updateItem = function(req, res) {
     });
 }
 
-exports.deleteItem = function(req, res) {
+exports.deleteItem = deleteItem;
+exports.urlDeleteItem = function(req, res) {
     var id = req.params.id;
     deleteItem(id, function(err, result) {
         if (err) {
@@ -162,7 +160,8 @@ exports.deleteItem = function(req, res) {
         }
     });
 }
-exports.deleteAll = function(req, res) {
+exports.deleteAll = deleteAll;
+exports.urlDeleteAll = function(req, res) {
     deleteAll(function(err, result) {
         if (err) {
             res.send("Error dropping table: " + err);
@@ -173,32 +172,3 @@ exports.deleteAll = function(req, res) {
     });
 }
 
-exports.socketConnect = function(socket) {
-    findAll(function(err, items) {
-        socket.emit('items', items);
-    });
-}
-exports.socketAdd = function(socket, data) {
-    addItem(data, function(err, result) {
-        if (err) {
-            socket.emit('error', 'Unable to add item: ' + err);
-        }
-    });
-}
-exports.socketDelete = function(socket, id) {
-    deleteItem(id, function(err, result) {
-        if (err) {
-            console.log("Error deleting items: " + err);
-            socket.emit('error', 'Unable to delete item: ' + err);
-        }
-    });
-}
-exports.socketUpdate = function(socket, data) {
-    var id = data["id"];
-    var item = data["item"];
-    updateItem(id, item, function(err, result) {
-        if (err) {
-            socket.emit('error', 'Update to update item: ' + err);
-        }
-    });
-}
