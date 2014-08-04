@@ -1,3 +1,4 @@
+localStorage.debug='*';
 // connect to the socket server
 var socket = io('http://localhost');
 
