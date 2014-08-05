@@ -44,6 +44,6 @@ app.get('/items/:id', mongoItems.urlFindById);
 app.post('/items', mongoItems.urlAddItem);
 app.put('/items/:id', mongoItems.urlUpdateItem);
 app.delete('/items/:id', mongoItems.urlDeleteItem);
-app.get('/drop', mongoItems.urlDeleteAll);
+app.delete('/items', mongoItems.urlDeleteAll);
 
 console.log("Express server listening on port 3000");

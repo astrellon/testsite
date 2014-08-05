@@ -2,7 +2,7 @@ var mongo = require('mongodb');
 
 var BSON = mongo.BSONPure;
 var server = new mongo.Server('localhost', 27017, {auto_reconnect: true});
-var db = new mongo.Db('testdb', server);
+var db = new mongo.Db('testdb', server, {safe: true});
 var collectionName = 'testcollection';
 
 db.open(function(err, db) {
@@ -122,6 +122,7 @@ function deleteAll(callback) {
 exports.addItem = addItem;
 exports.urlAddItem = function(req, res) {
     var item = req.body;
+    console.log("Adding item: ", item, typeof(item));
     addItem(item, function(err, result) {
         if (err) {
             res.send({'error': 'An error has occured'});

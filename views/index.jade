@@ -10,8 +10,8 @@ block content
 block items
     ul.items
         each item, index in items
-            li 
-                span #{item}
+            li(item-id=item._id)
+                span.text #{item.text}
                 input.update(type='button', value='Update')
                 input.remove(type='button', value='Remove')
 

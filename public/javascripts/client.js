@@ -1,40 +1,53 @@
+function send(url, method, data) {
+    $.ajax(url, {
+        type: method,
+        data: data ? JSON.stringify(data) : undefined, 
+        contentType: 'application/json; charset=utf-8',
+        dataType: 'json'
+    });
+}
 function createItem(text) {
-    $.post('/items', {text: text}, null, "json");
-    //socket.emit('addItem', {text: text});
+    send('/items', 'POST', {text: text});
+    refreshPage();
 }
 function removeItem(id) {
-    //socket.emit('removeItem', id);
+    send('/items/' + id, 'DELETE');
+    refreshPage();
 }
 function updateItem(id, text) {
-    //socket.emit('updateItem', {id: id, item: {text: text}});
+    send('/items/' + id, 'PUT', {text: text});
+    refreshPage();
+}
+function removeAll() {
+    send('/items/', 'DELETE');
+    refreshPage();
+}
+function refreshPage() {
+    window.location.href = window.location.href;
 }
 function showUpdate(id) {
-    $('.itemSubmission .submitText').attr('updating', id).val()
+    var area = $('.itemSubmission .submitText');
+    var text = $("li[item-id='" + id + "'] .text").text();
+    area.val($(this).parent().find('.text'));
+    $('.itemSubmission .submitText').attr('updating', id).val(text);
     $('.itemSubmission .submit').slideUp();
     $('.itemSubmission .update').slideDown();
 }
 function closeUpdate() {
-    $('.itemSubmission .submitText').removeAttr('updating');
+    $('.itemSubmission .submitText').val('').removeAttr('updating');
     $('.itemSubmission .submit').slideDown();
     $('.itemSubmission .update').slideUp();
 }
-function removeAll() {
-    $.get("/drop", function(resp) {
-        console.log("Dropped:" , resp);
-    });
-}
 
 $(function() {
-    var tempFn = doT.template("<div>Yo {{=it.name}}</div>");
-    $("#header").append(tempFn({name: 'Melli'}));
     $('ul.items').on('click', '.remove', function() {
-        var id = $(this).parent().attr("data-id");
+        var id = $(this).parent().attr("item-id");
         if (id) {
             removeItem(id);
         }
     })
     .on('click', '.update', function() {
-        var id = $(this).parent().attr("data-id");
+        var id = $(this).parent().attr("item-id");
         if (id) {
             showUpdate(id);
         }
