@@ -1,43 +1,48 @@
-var mongo = require('mongodb');
+var mongo = require('mongodb')
+  , mongoServer = require('./server')
+  , utils = require('../utils');
 
 var BSON = mongo.BSONPure;
-var server = new mongo.Server('localhost', 27017, {auto_reconnect: true});
-var db = new mongo.Db('testdb', server, {safe: true});
-var collectionName = 'testcollection';
 
-db.open(function(err, db) {
-    if (!err) {
-        db.collection(collectionName, {strict: true}, function(err, collection) {
-            if (err) {
-                console.log("Could not find 'testcollection'");
-            }
-        });
-    }
-})
+function Collection(name, db) {
+    this.name = name;
+    this.db = db;
+}
+var fn = Collection.prototype;
 
-function findById(id, callback) {
+fn.init = function(callback) {
+    this.db.collection(this.name, {strict: true}, function(err, collection) {
+        if (typeof(callback) === "function") {
+            callback(err);
+        }
+    });
+};
+
+fn.findById = function(id, callback) {
     if (typeof(callback) !== "function") {
         console.log("Cannot find by id '" + id + "' without a callback");
         return;
     }
-    db.collection(collectionName, function(err, collection) {
+    this.db.collection(this.name, function(err, collection) {
         collection.findOne({'_id': new BSON.ObjectID(id)}, function(err, item) {
             callback(err, item);
         });
     });
 }
-exports.urlFindById = function(req, res) {
+fn.urlFindById = function(req, res) {
     var id = req.params.id;
-    findById(id, function(err, item) {
+    this.findById(id, function(err, item) {
         res.send(item);
     });
 }
-function findAll(callback) {
+
+
+fn.findAll = function(callback) {
     if (typeof(callback) !== "function") {
         console.log("Cannot find all without a callback");
         return;
     }
-    db.collection(collectionName, function(err, collection) {
+    this.db.collection(this.name, function(err, collection) {
         if (err) {
             callback(err, null);
             return;
@@ -47,16 +52,15 @@ function findAll(callback) {
         });
     });
 }
-exports.findAll = findAll;
-exports.urlFindAll = function(req, res) {
-    findAll(function(err, items) {
+fn.urlFindAll = function(req, res) {
+    this.findAll(function(err, items) {
         res.send(items);
     });
 }
-
-function addItem(item, callback) {
+fn.addItem = function(item, callback) {
     item._timestamp = (new Date()).getTime();
-    db.collection(collectionName, function(err, collection) {
+    console.log("Adding item to collection: ", item);
+    this.db.collection(this.name, function(err, collection) {
         collection.insert(item, {safe: true}, function(err, result) {
             if (typeof(callback) === "function") {
                 callback(err, result);
@@ -64,8 +68,8 @@ function addItem(item, callback) {
         });
     })
 }
-function deleteItem(id, callback) {
-    db.collection(collectionName, function(err, collection) {
+fn.deleteItem = function(id, callback) {
+    this.db.collection(this.name, function(err, collection) {
         if (err && typeof(callback) === "function") {
             callback(err, null);
             return;
@@ -78,16 +82,8 @@ function deleteItem(id, callback) {
         });
     });
 }
-function mergeObjects(dest, obj1, obj2) {
-    for (var prop in obj1) {
-        dest[prop] = obj1[prop];
-    }
-    for (var prop in obj2) {
-        dest[prop] = obj2[prop];
-    }
-}
-function updateItem(id, item, callback) {
-    db.collection(collectionName, function(err, collection) {
+fn.updateItem = function(id, item, callback) {
+    this.db.collection(this.name, function(err, collection) {
         if (err) {
             if (typeof(callback) === "function") {
                 callback(err, null);
@@ -103,7 +99,7 @@ function updateItem(id, item, callback) {
                 return;
             }
             var merged = {};
-            mergeObjects(merged, origItem, item);
+            utils.mergeObjects(merged, origItem, item);
             collection.update(objId, merged, {safe: true}, function(err, result) {
                 if (typeof(callback) === "function") {
                     callback(err, result);
@@ -112,18 +108,17 @@ function updateItem(id, item, callback) {
         });
     });
 }
-function deleteAll(callback) {
-    db.dropCollection(collectionName, function(err, result) {
+fn.deleteAll = function(callback) {
+    this.db.dropCollection(this.name, function(err, result) {
         if (typeof(callback) === "function") {
             callback(err, result);
         }
     });
 }
-exports.addItem = addItem;
-exports.urlAddItem = function(req, res) {
+fn.urlAddItem = function(req, res) {
     var item = req.body;
-    console.log("Adding item: ", item, typeof(item));
-    addItem(item, function(err, result) {
+    console.log("Adding item to: ", this);
+    this.addItem(item, function(err, result) {
         if (err) {
             res.send({'error': 'An error has occured'});
         }
@@ -132,11 +127,10 @@ exports.urlAddItem = function(req, res) {
         }
     });
 }
-exports.updateItem = updateItem;
-exports.urlUpdateItem = function(req, res) {
+fn.urlUpdateItem = function(req, res) {
     var id = req.params.id;
     var item = req.body;
-    updateItem(id, item, function(err, result) {
+    this.updateItem(id, item, function(err, result) {
         if (err) {
             console.log('Error updating item: ' + err);
             res.send({'error': 'An error has occured'});
@@ -148,11 +142,12 @@ exports.urlUpdateItem = function(req, res) {
     });
 }
 
-exports.deleteItem = deleteItem;
-exports.urlDeleteItem = function(req, res) {
+fn.urlDeleteItem = function(req, res) {
     var id = req.params.id;
-    deleteItem(id, function(err, result) {
+    console.log("Deleting item: ", id);
+    this.deleteItem(id, function(err, result) {
         if (err) {
+            console.log("Error deleting item: ", id);
             res.send({'error': 'An error has occured - ' + err});
         }
         else {
@@ -161,9 +156,8 @@ exports.urlDeleteItem = function(req, res) {
         }
     });
 }
-exports.deleteAll = deleteAll;
-exports.urlDeleteAll = function(req, res) {
-    deleteAll(function(err, result) {
+fn.urlDeleteAll = function(req, res) {
+    this.deleteAll(function(err, result) {
         if (err) {
             res.send("Error dropping table: " + err);
         }
@@ -172,4 +166,27 @@ exports.urlDeleteAll = function(req, res) {
         }
     });
 }
+fn.addUrlsToApp = function(app, url) {
+    var self = this;
+    this.init(function(err) {
+        app.get(url, (self.urlFindAll).bind(self));
+        app.get(url + '/:id', (self.urlFindById).bind(self));
+        app.post(url, (self.urlAddItem).bind(self));
+        app.put(url + '/:id', (self.urlUpdateItem).bind(self));
+        app.delete(url + '/:id', (self.urlDeleteItem).bind(self));
+        app.delete(url, (self.urlDeleteAll).bind(self));
+    });
+}
 
+exports.Collection = Collection;
+
+var collections = {}
+function getCollection(name, db) {
+    if (collections[name]) {
+        return collections[name];
+    }
+    var collection = new Collection(name, db);
+    Collection[name] = collection;
+    return collection;
+}
+exports.getCollection = getCollection;

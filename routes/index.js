@@ -2,8 +2,14 @@
 /*
  * GET home page.
  */
-mongoItems = require('../routes/items');
+//mongoItems = require('../routes/items');
+var mongoCollection = require('./mongo/collection.js');
+var mongoItems = null;
+var mongoUsers = null;
 
+exports.setItemCollection = function(collection) {
+    mongoItems = collection;
+}
 
 exports.index = function(req, res){
     mongoItems.findAll(function(err, items) {

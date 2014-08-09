@@ -9,7 +9,8 @@ var express = require('express')
   , morgan = require('morgan')
   , errorHandler = require('errorhandler')
   , http = require('http')
-  , mongoItems = require('./routes/items')
+  , mongoServer = require('./routes/mongo/server')
+  , mongoCollection = require('./routes/mongo/collection')
   , sass = require('node-sass');
 
 var app = express();
@@ -37,13 +38,21 @@ if (env === 'development') {
   app.use(errorHandler());
 }
 
+
+var appDb = mongoServer.getDb('localhost', 27017, 'testdb');
+var appItems = mongoCollection.getCollection('items', appDb);
+var appUsers = mongoCollection.getCollection('users', appDb);
+routes.setItemCollection(appItems);
+
 app.get('/', routes.index);
 
-app.get('/items', mongoItems.urlFindAll);
-app.get('/items/:id', mongoItems.urlFindById);
-app.post('/items', mongoItems.urlAddItem);
-app.put('/items/:id', mongoItems.urlUpdateItem);
-app.delete('/items/:id', mongoItems.urlDeleteItem);
-app.delete('/items', mongoItems.urlDeleteAll);
+appDb.open(function(err, db) {
+    if (err) {
+        console.error('Unable to connect to mongodb database');
+        return;
+    }
+    appItems.addUrlsToApp(app, '/items');
+    appUsers.addUrlsToApp(app, '/users');
+});
 
 console.log("Express server listening on port 3000");
